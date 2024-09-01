@@ -1,47 +1,6 @@
 import os.path
 from envios import Envio
 
-
-def country(cp):
-    n = len(cp)
-    if n < 4 or n > 9:
-        return 'Otro'
-
-    # ¿es Argentina?
-    if n == 8:
-        if cp[0].isalpha() and cp[0] not in 'IO' and cp[1:5].isdigit() and cp[5:8].isalpha():
-            return 'Argentina'
-        else:
-            return 'Otro'
-
-    # ¿es Brasil?
-    if n == 9:
-        if cp[0:5].isdigit() and cp[5] == '-' and cp[6:9].isdigit():
-            return 'Brasil'
-        else:
-            return 'Otro'
-
-    if cp.isdigit():
-        # ¿es Bolivia?
-        if n == 4:
-            return 'Bolivia'
-
-        # ¿es Chile?
-        if n == 7:
-            return 'Chile'
-
-        # ¿es Paraguay?
-        if n == 6:
-            return 'Paraguay'
-
-        # ¿es Uruguay?
-        if n == 5:
-            return 'Uruguay'
-
-    # ...si nada fue cierto, entonces sea lo que sea, es otro...
-    return 'Otro'
-
-
 def check_dir(direccion):
     cl = cd = 0
     td = False
@@ -183,6 +142,13 @@ def validar_pago(mensaje="Ingrese un valor:"):
         nvo_pago = int(input(mensaje))
     return nvo_pago
 
+def validar_m(total, mensaje="Ingrese un valor:"):
+    m = int(input(mensaje))
+    while m < -1 or m > total:
+        print("Error, debe ingresar un valor entre -1 y", total)
+        m = int(input(mensaje))
+    return m
+
 def select_sort_cp(v):
     n = len(v)
     for i in range(n-1):
@@ -190,15 +156,32 @@ def select_sort_cp(v):
             if v[i].cp > v[j].cp:
                 v[i], v[j] = v[j], v[i]
 
+def buscar_envio_por_dir_tipo(v, direccion, tipo):
+    for i in range(len(v)):
+        match_dir = direccion == v[i].direccion
+        match_tipo = tipo == v[i].tipo
+
+        if match_dir and match_tipo:
+            return i
+    return -1
+
+def buscar_envio_por_cp(v, cp):
+    for i in range(len(v)):
+        if cp == v[i].cp:
+            return i
+    return -1
+
 def main():
     menu = '\nMenú de Opciones - TP3 G148\n' \
            '1. Cargar vector de envio\n' \
            '2. Cargar nuevo envio por teclado\n' \
            '3. Mostrar todos los envios ordenados por codigo postal, de menor a mayor\n' \
+           '4. Buscar envio por dirección y tipo de envio\n' \
+           '5. Buscar envio por código postal y cambiar tipo de envio\n' \
            '0. SALIR\n' \
            'Ingrese su opción: '
 
-    envios = None
+    envios = []
     control = None
     opcion = -1
 
@@ -212,47 +195,77 @@ def main():
             envios, control = crear_envios(fd)
 
             print(len(envios), "envios cargados exitosamente!")
+            # ---------------------------------------------
+        elif opcion == 2:
+            # ---------------------------------------------
+            msg_tipo = "Tipo de envío (un número entero entre 0 y 6): "
+            msg_pago = "Forma de pago (un número entero (1:efectivo, 2: tarjeta de crédito)): "
 
-        elif opcion in (2, 3, 4, 5):
-            if envios is not None:
-                if opcion == 2:
-                    # ---------------------------------------------
-                    msg_tipo = "Tipo de envío (un número entero entre 0 y 6): "
-                    msg_pago = "Forma de pago (un número entero (1:efectivo, 2: tarjeta de crédito)): "
+            nuevo_cp = input("Código postal: ")
+            nueva_direccion = input("Dirección: ")
+            nuevo_tipo = validar_tipo(msg_tipo)
+            nuevo_fpago = validar_pago(msg_pago)
 
-                    nuevo_cp = input("Código postal: ")
-                    nueva_direccion = input("Dirección: ")
-                    nuevo_tipo = validar_tipo(msg_tipo)
-                    nuevo_fpago = validar_pago(msg_pago)
+            nuevo_envio = Envio(nuevo_cp, nueva_direccion, nuevo_tipo, nuevo_fpago)
+            envios.append(nuevo_envio)
 
-                    nuevo_envio = Envio(nuevo_cp, nueva_direccion, nuevo_tipo, nuevo_fpago)
-                    
-                    envios.append(nuevo_envio);
-                    
-                    print("Nuevo envio agregado con exito!")
-                    print(nuevo_envio)
-                    print(len(envios), "envios actualmente cargados en la lista!")
+            print("Nuevo envio agregado con exito!")
+            print(nuevo_envio)
+            print(len(envios), "envios actualmente cargados en la lista!")
 
-                    # ---------------------------------------------
-                elif opcion == 3:
-                    # ---------------------------------------------
-                    m = int(input("Seleccionar la cantidad de registros a mostrar: "))
-                    select_sort_cp(envios)
+            # ---------------------------------------------
+        elif opcion == 3:
+            # ---------------------------------------------
+            total = len(envios)
+            msg_m = "Seleccionar la cantidad de registros a mostrar (Ingresar -1 para mostrar todos): "
 
-                    for envio in envios[:m]:
-                        pais = country(envio.cp)
-                        print("País: ", pais, "-", envio)
-                    # ---------------------------------------------
-                elif opcion == 4:
-                    # ---------------------------------------------
-                    pass
-                    # ---------------------------------------------
-                elif opcion == 5:
-                    # ---------------------------------------------
-                    pass
-                    # ---------------------------------------------
+            m = validar_m(total, msg_m)
+
+            if m == -1:
+                m = total
+
+            select_sort_cp(envios)
+
+            for envio in envios[:m]:
+                print(envio)
+
+            # ---------------------------------------------
+        elif opcion == 4:
+            # ---------------------------------------------
+            msg_tipo = "Tipo de envío (un número entero entre 0 y 6): "
+
+            d = input("Dirección: ")
+            e = validar_tipo(msg_tipo)
+            
+            index_d_e = buscar_envio_por_dir_tipo(envios, d, e)
+            
+            print("\n-------------------------------------")
+
+            if (index_d_e != -1):
+                print(envios[index_d_e])
             else:
-                print('\nPrimero debe generar envios!')
+                print("No existen envios con dirección:", d, "y tipo de envio:", e)
+
+            print("-------------------------------------")
+            # ---------------------------------------------
+        elif opcion == 5:
+            # ---------------------------------------------
+            nuevo_cp = input("Código postal: ")
+            
+            index_cp = buscar_envio_por_cp(envios, nuevo_cp)
+            
+            print("\n-------------------------------------")
+
+            if (index_cp != -1):
+                envio_cp = envios[index_cp]
+                envio_cp.cambiar_forma_pago()
+                print(envio_cp)
+                
+            else:
+                print("No existen envios con código postal:", nuevo_cp)
+
+            print("-------------------------------------")
+            # ---------------------------------------------
         elif opcion == 0:
             pass
         else:
