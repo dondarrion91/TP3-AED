@@ -1,78 +1,6 @@
 import os.path
 from envios import Envio
 
-def check_dir(direccion):
-    cl = cd = 0
-    td = False
-    ant = " "
-    for car in direccion:
-        if car in " .":
-            # fin de palabra...
-            # un flag si la palabra tenia todos sus caracteres digitos...
-            if cl == cd:
-                td = True
-
-            # resetear variables de uso parcial...
-            cl = cd = 0
-            ant = " "
-
-        else:
-            # en la panza de la palabra...
-            # contar la cantidad de caracteres de la palabra actual...
-            cl += 1
-
-            # si el caracter no es digito ni letra, la direccion no es valida... salir con False...
-            if not car.isdigit() and not car.isalpha():
-                return False
-
-            # si hay dos mayusculas seguidas, la direccion no es valida... salir con False...
-            if ant.isupper() and car.isupper():
-                return False
-
-            # contar digitos para saber si hay alguna palabra compuesta solo por digitos...
-            if car.isdigit():
-                cd += 1
-
-            ant = car
-
-    # si llegamos acá, es porque no había dos mayusculas seguidas y no habia caracteres raros...
-    # ... por lo tanto, habria que salir con True a menos que no hubiese una palabra con todos digitos...
-    return td
-
-
-def final_amount(cp, destino, tipo, pago):
-    # determinación del importe inicial a pagar.
-    importes = (1100, 1800, 2450, 8300, 10900, 14300, 17900)
-    monto = importes[tipo]
-
-    if destino == 'Argentina':
-        inicial = monto
-    else:
-        if destino == 'Bolivia' or destino == 'Paraguay' or (destino == 'Uruguay' and cp[0] == '1'):
-            inicial = int(monto * 1.20)
-        elif destino == 'Chile' or (destino == 'Uruguay' and cp[0] != '1'):
-            inicial = int(monto * 1.25)
-        elif destino == 'Brasil':
-            if cp[0] == '8' or cp[0] == '9':
-                inicial = int(monto * 1.20)
-            else:
-                if cp[0] == '0' or cp[0] == '1' or cp[0] == '2' or cp[0] == '3':
-                    inicial = int(monto * 1.25)
-                else:
-                    inicial = int(monto * 1.30)
-        else:
-            inicial = int(monto * 1.50)
-
-    # determinación del valor final del ticket a pagar.
-    # asumimos que es pago en tarjeta...
-    final = inicial
-
-    # ... y si no lo fuese, la siguiente será cierta y cambiará el valor...
-    if pago == 1:
-        final = int(0.9 * inicial)
-
-    return final
-
 def crear_envios(fd):
     # control de existencia...
     if not os.path.exists(fd):
@@ -178,11 +106,16 @@ def main():
            '3. Mostrar todos los envios ordenados por codigo postal, de menor a mayor\n' \
            '4. Buscar envio por dirección y tipo de envio\n' \
            '5. Buscar envio por código postal y cambiar tipo de envio\n' \
+           '6. Mostar cantidad de envios por tipo de envio.\n' \
+           '7. Mostrar importe final acumulado por tipo de envio.\n' \
+           '8. Obtener tipo de envio con mayor importe acumulado.\n' \
+           '9. Calcular y mostrar importe final promedio.\n' \
            '0. SALIR\n' \
            'Ingrese su opción: '
 
     envios = []
-    control = None
+    cantidades, importes = None, None
+    control = "Hard Control"
     opcion = -1
 
     while opcion != 0:
@@ -265,6 +198,94 @@ def main():
                 print("No existen envios con código postal:", nuevo_cp)
 
             print("-------------------------------------")
+            # ---------------------------------------------
+        elif opcion == 6:
+            # ---------------------------------------------
+            cantidades = 7 * [0]
+
+            for envio in envios:
+                if control == "Hard Control":
+                    direccion_is_valid = envio.check_direccion()
+
+                    if direccion_is_valid:
+                        cantidades[envio.tipo] += 1
+                else:
+                    cantidades[envio.tipo] += 1
+
+            print("-------------------------------------")
+            print("Carta Simple - Peso menor a 20g:", cantidades[0], "envios.")
+            print("Carta Simple - Peso entre 20g y 150g:", cantidades[1], "envios.")
+            print("Carta Simple - Peso entre 150g y 500g:", cantidades[2], "envios.")
+            print("Carta Certificada - Peso menor a 150g:", cantidades[3], "envios.")
+            print("Carta Certificada - Peso entre 150g y 500g:", cantidades[4], "envios.")
+            print("Carta Expresa - Peso menor a 150g:", cantidades[5], "envios.")
+            print("Carta Expresa - Peso entre 150g y 500g:", cantidades[6], "envios.")
+            print("-------------------------------------")
+            # ---------------------------------------------
+        elif opcion == 7:
+            # ---------------------------------------------
+            importes = 7 * [0]
+            
+            for envio in envios:
+                import_final = envio.calcular_importe_final()
+
+                if control == "Hard Control":
+                    direccion_is_valid = envio.check_direccion()
+
+                    if direccion_is_valid:
+                        importes[envio.tipo] += import_final
+                else:
+                    importes[envio.tipo] += import_final
+
+            print("-------------------------------------")
+            print("Importe final - Carta Simple - Peso menor a 20g: $", importes[0])
+            print("Importe final - Carta Simple - Peso entre 20g y 150g: $", importes[1])
+            print("Importe final - Carta Simple - Peso entre 150g y 500g: $", importes[2])
+            print("Importe final - Carta Certificada - Peso menor a 150g: $", importes[3])
+            print("Importe final - Carta Certificada - Peso entre 150g y 500g: $", importes[4])
+            print("Importe final - Carta Expresa - Peso menor a 150g: $", importes[5])
+            print("Importe final - Carta Expresa - Peso entre 150g y 500g: $", importes[6])
+            print("-------------------------------------")
+            # ---------------------------------------------
+        elif opcion == 8:
+            # ---------------------------------------------
+            if not importes:
+                print("\n-------------------------------------")
+                print("Error: No existe la lista de importes acumulados, por favor ingresar opción 6.")
+                print("-------------------------------------")
+            else:
+                mayor_importe = None, None
+                total = 0
+
+                for i in range(len(importes)):
+                    total += importes[i]
+
+                    if mayor_importe is None or importes[i] > mayor_importe:
+                        mayor_importe = importes[i]
+
+                porcentaje = (mayor_importe * 100) / total
+                print("Mayor importe: ", mayor_importe)
+                print("Porcentaje respecto al monto total: %", int(porcentaje))
+            # ---------------------------------------------
+        elif opcion == 9:
+            # ---------------------------------------------
+            total_importe_final = 0
+            total_menor_promedio = 0
+
+            for envio in envios:
+                importe_final = envio.calcular_importe_final()
+                total_importe_final += importe_final
+
+            promedio = int(total_importe_final / len(envios))
+            
+            for envio in envios:
+                importe_final = envio.calcular_importe_final()
+
+                if importe_final < promedio:
+                    total_menor_promedio += 1
+
+            print("Importe total promedio:", promedio)
+            print("Cantidad de envios que tuvieron importe menor al promedio:", total_menor_promedio)
             # ---------------------------------------------
         elif opcion == 0:
             pass

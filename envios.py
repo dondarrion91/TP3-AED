@@ -38,6 +38,81 @@ class Envio:
             return "Carta Expresa"
 
         return "Tipo de carta desconocido"
+    
+    def calcular_importe_final(self):
+        destino = self.get_pais()
+        cp, tipo, pago = self.cp, self.tipo, self.pago
+
+        # determinación del importe inicial a pagar.
+        importes = (1100, 1800, 2450, 8300, 10900, 14300, 17900)
+        monto = importes[tipo]
+
+        if destino == 'Argentina':
+            inicial = monto
+        else:
+            if destino == 'Bolivia' or destino == 'Paraguay' or (destino == 'Uruguay' and cp[0] == '1'):
+                inicial = int(monto * 1.20)
+            elif destino == 'Chile' or (destino == 'Uruguay' and cp[0] != '1'):
+                inicial = int(monto * 1.25)
+            elif destino == 'Brasil':
+                if cp[0] == '8' or cp[0] == '9':
+                    inicial = int(monto * 1.20)
+                else:
+                    if cp[0] == '0' or cp[0] == '1' or cp[0] == '2' or cp[0] == '3':
+                        inicial = int(monto * 1.25)
+                    else:
+                        inicial = int(monto * 1.30)
+            else:
+                inicial = int(monto * 1.50)
+
+        # determinación del valor final del ticket a pagar.
+        # asumimos que es pago en tarjeta...
+        final = inicial
+
+        # ... y si no lo fuese, la siguiente será cierta y cambiará el valor...
+        if pago == 1:
+            final = int(0.9 * inicial)
+
+        return final
+
+    def check_direccion(self):
+        direccion = self.direccion
+        cl = cd = 0
+        td = False
+        ant = " "
+        for car in direccion:
+            if car in " .":
+                # fin de palabra...
+                # un flag si la palabra tenia todos sus caracteres digitos...
+                if cl == cd:
+                    td = True
+
+                # resetear variables de uso parcial...
+                cl = cd = 0
+                ant = " "
+
+            else:
+                # en la panza de la palabra...
+                # contar la cantidad de caracteres de la palabra actual...
+                cl += 1
+
+                # si el caracter no es digito ni letra, la direccion no es valida... salir con False...
+                if not car.isdigit() and not car.isalpha():
+                    return False
+
+                # si hay dos mayusculas seguidas, la direccion no es valida... salir con False...
+                if ant.isupper() and car.isupper():
+                    return False
+
+                # contar digitos para saber si hay alguna palabra compuesta solo por digitos...
+                if car.isdigit():
+                    cd += 1
+
+                ant = car
+
+        # si llegamos acá, es porque no había dos mayusculas seguidas y no habia caracteres raros...
+        # ... por lo tanto, habria que salir con True a menos que no hubiese una palabra con todos digitos...
+        return td
 
     def get_pais(self):
         cp = self.cp
