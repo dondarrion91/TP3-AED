@@ -166,7 +166,7 @@ def main():
             
             print("\n-------------------------------------")
 
-            if (index_d_e != -1):
+            if index_d_e != -1:
                 print(envios[index_d_e])
             else:
                 print("No existen envios con dirección:", d, "y tipo de envio:", e)
@@ -181,7 +181,7 @@ def main():
             
             print("\n-------------------------------------")
 
-            if (index_cp != -1):
+            if index_cp != -1:
                 envio_cp = envios[index_cp]
                 envio_cp.cambiar_forma_pago()
                 print(envio_cp)
