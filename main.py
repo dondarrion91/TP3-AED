@@ -2,56 +2,38 @@ import os.path
 from envios import Envio
 
 def crear_envios(fd):
-    # control de existencia...
     if not os.path.exists(fd):
         print('El archivo', fd, 'no existe...')
         print('Revise, y reinicie el programa...')
         exit(1)
 
-    # procesamiento del archivo de entrada...
-    # apertura del archivo...
     m = open(fd, 'rt')
 
-    # procesamento de la línea de timestamp...
-    # Resultado 1...
     line = m.readline()
     control = 'Soft Control'
     if 'HC' in line:
         control = 'Hard Control'
 
-    # Reset array de envios
     envios = []
 
-    # procesamiento de los envios registrados...
     while True:
-        # ...intentar leer la linea que sigue...
         line = m.readline()
 
-        # ...si se obtuvo una cadena vacia, cortar el ciclo y terminar...
         if line == '':
             break
 
         if line[-1] == "\n":
             line = line[0:-1]
 
-        # ...procesar la línea leída si el ciclo no cortó...
-        # ... obtener cada dato por separado, y en el tipo correcto...
-        # ... no es necesario en este caso eliminar el "\n" del final,
-        # porque la linea no se va a mostrar en pantalla, y porque las
-        # instrucciones que siguen toman cada dato en forma directa,
-        # prescindiendo del "\n"...
         cp = line[0:9].strip().upper()
         direccion = line[9:29].strip()
         tipo = int(line[29])
         pago = int(line[30])
 
-        # # importe final a pagar en ese envio...
-        # final = final_amount(cp, pais, tipo, pago)
         nuevo_envio = Envio(cp, direccion, tipo, pago)
         
         envios.append(nuevo_envio)
 
-    # cierre del archivo...
     m.close()
     
     return envios, control
@@ -123,11 +105,17 @@ def main():
         if opcion == 1:
             # nombre del archivo de texto de entrada...
             # ... se asume que está en la misma carpeta del proyecto...
+            msg = "Al realizar esta operación, los envios previamente cargados seran eliminados!\n" \
+            + "Si desea cancelar esta acción, ingrese el valor 0, en caso de proseguir, presione cualquier tecla: "
+            notsure = input(msg)
+
             fd = 'envios-tp3.txt'
-
-            envios, control = crear_envios(fd)
-
-            print(len(envios), "envios cargados exitosamente!")
+            
+            if notsure == '0':
+                print("Accion cancelada!\nCantidad de envios cargados:", len(envios))
+            else:
+                envios, control = crear_envios(fd)
+                print(len(envios), "envios cargados exitosamente!")
             # ---------------------------------------------
         elif opcion == 2:
             # ---------------------------------------------
@@ -159,9 +147,13 @@ def main():
 
             select_sort_cp(envios)
 
-            for envio in envios[:m]:
-                print(envio)
-
+            if len(envios) == 0:
+                print("------------------------------------------------")
+                print("No hay envios cargados! Ingresar opciones 1 ó 2")
+                print("------------------------------------------------")
+            else:
+                for envio in envios[:m]:
+                    print(envio)
             # ---------------------------------------------
         elif opcion == 4:
             # ---------------------------------------------
@@ -251,32 +243,39 @@ def main():
             # ---------------------------------------------
             if not importes:
                 print("\n-------------------------------------")
-                print("Error: No existe la lista de importes acumulados, por favor ingresar opción 6.")
+                print("Error: No existe la lista de importes acumulados, por favor ingresar opción 7.")
                 print("-------------------------------------")
             else:
-                mayor_importe = None, None
+                mayor_importe, tipo_index = None, None
                 total = 0
+                porcentaje = 0
 
                 for i in range(len(importes)):
                     total += importes[i]
 
                     if mayor_importe is None or importes[i] > mayor_importe:
+                        tipo_index = i
                         mayor_importe = importes[i]
 
-                porcentaje = (mayor_importe * 100) / total
-                print("Mayor importe: ", mayor_importe)
-                print("Porcentaje respecto al monto total: %", int(porcentaje))
+                if total != 0:
+                    porcentaje = (mayor_importe * 100) / total
+
+                print("Tipo de envio con con mayor importe acumulado:", tipo_index)
+                print("Importe acumulado:", mayor_importe)
+                print("Porcentaje respecto al monto total: %", round(porcentaje, 2))
             # ---------------------------------------------
         elif opcion == 9:
             # ---------------------------------------------
             total_importe_final = 0
             total_menor_promedio = 0
+            promedio = 0
 
             for envio in envios:
                 importe_final = envio.calcular_importe_final()
                 total_importe_final += importe_final
 
-            promedio = int(total_importe_final / len(envios))
+            if len(envios) != 0:
+                promedio = int(total_importe_final / len(envios))
             
             for envio in envios:
                 importe_final = envio.calcular_importe_final()
